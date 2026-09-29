@@ -14,6 +14,8 @@ namespace MiSideMod
     {
         public ModBehaviour(IntPtr ptr) : base(ptr) { }
 
+        private void OnGUI() => SandboxMenu.Draw();
+
         private void Update()
         {
             if (Input.GetKeyDown(Plugin.DumpKey.Value))
@@ -23,6 +25,22 @@ namespace MiSideMod
 
             if (Input.GetKeyDown(KeyCode.F12))
                 ProbeDays();
+
+            if (Input.GetKeyDown(KeyCode.F2))
+                SandboxMenu.Toggle();
+            SandboxMenu.Tick();
+
+            // F5 = debug: switch on the final quest (Day 37) to test the ending / the transition block
+            if (Input.GetKeyDown(KeyCode.F5))
+            {
+                var quests = GameObject.Find("Quests");
+                Transform q10 = null;
+                if (quests != null)
+                    for (int i = 0; i < quests.transform.childCount; i++)
+                        if (quests.transform.GetChild(i).name.StartsWith("Quest 10")) q10 = quests.transform.GetChild(i);
+                if (q10 == null) Plugin.Log.LogWarning("Quest 10 not found");
+                else { q10.gameObject.SetActive(true); Plugin.Log.LogInfo("Activated " + q10.name); }
+            }
 
             // F6 toggles the block on the Day 37 jump into Mita's world (saved per session in the config)
             if (Input.GetKeyDown(KeyCode.F6))
@@ -125,7 +143,7 @@ namespace MiSideMod
         /// TamagotchiHouse.SetActive, GameStop, ..., World.GoScene. Switching every call in that event
         /// off (a runtime Unity feature, no hooking) keeps the player in the minigame.
         /// </summary>
-        private static void SetTransitionBlocked(bool block)
+        internal static void SetTransitionBlocked(bool block)
         {
             int found = 0;
             VisitAllEvents((owner, prop, ev) =>

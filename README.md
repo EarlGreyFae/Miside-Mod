@@ -28,6 +28,10 @@ In game, press **F8** (configurable) to dump the active scene hierarchy and comp
 **F10** gives +100 coins and **F11** re-rolls energy/hunger/mood via `NewDay` (not a story day; the day counter lives elsewhere). Game events (new day,
 minigame start/stop, dialogue start) are logged to `LogOutput.log`.
 
+**F2** opens the sandbox panel: economy cheats, unlock the whole shop, launch any minigame, play any
+Chibi Mita animation, replay any dialogue, or activate any quest. All of it reuses content the game
+already has. **F5** switches on the final quest (Day 37) so the ending can be tested in seconds.
+
 **F6** toggles `BlockRealmTransition` (also a config option, off by default): it switches off the saved
 event on the final quest (Day 37 "Wait", `Quest 10`) that calls `World.GoScene` and pulls you into
 `Scene 2 - InGame`. Experimental: what the game does afterwards has not been tested.
