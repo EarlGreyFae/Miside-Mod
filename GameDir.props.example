@@ -1,0 +1,6 @@
+<!-- Copy to GameDir.props and set the path to your MiSide install. -->
+<Project>
+  <PropertyGroup>
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\MiSide</GameDir>
+  </PropertyGroup>
+</Project>
