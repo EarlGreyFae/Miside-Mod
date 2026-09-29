@@ -46,14 +46,14 @@ namespace MiSideMod
             if (Input.GetKeyDown(KeyCode.F6))
             {
                 Plugin.BlockJump.Value = !Plugin.BlockJump.Value;
-                SetTransitionBlocked(Plugin.BlockJump.Value);
+                SetTransitionBlocked(Plugin.BlockJump.Value, false);
             }
-            // Apply the configured setting once, shortly after the scene has loaded
-            if (_autoApplyAt < 0f) _autoApplyAt = Time.time + 10f;
-            else if (_autoApplyAt > 0f && Time.time > _autoApplyAt)
+            // If the config says to block the jump, keep retrying until the Tamagotchi scene has loaded
+            // and the event exists (the scene is not there yet while the title/menu is showing).
+            if (Plugin.BlockJump.Value && !_blockApplied && Time.time > _nextBlockTry)
             {
-                _autoApplyAt = 0f;
-                if (Plugin.BlockJump.Value) SetTransitionBlocked(true);
+                _nextBlockTry = Time.time + 3f;
+                _blockApplied = SetTransitionBlocked(true, true) > 0;
             }
 
             // Test keys: F10 = +100 coins, F11 = Tamagotchi_Main.NewDay (re-rolls energy, not the story day)
@@ -143,7 +143,7 @@ namespace MiSideMod
         /// TamagotchiHouse.SetActive, GameStop, ..., World.GoScene. Switching every call in that event
         /// off (a runtime Unity feature, no hooking) keeps the player in the minigame.
         /// </summary>
-        internal static void SetTransitionBlocked(bool block)
+        internal static int SetTransitionBlocked(bool block, bool quiet)
         {
             int found = 0;
             VisitAllEvents((owner, prop, ev) =>
@@ -162,10 +162,13 @@ namespace MiSideMod
                 }
                 catch (Exception e) { Plugin.Log.LogWarning($"  transition toggle failed on {owner}: {e.Message}"); }
             });
-            Plugin.Log.LogInfo($"Realm transition {(block ? "BLOCKED" : "restored")} ({found} event(s) found)");
+            if (!quiet || found > 0)
+                Plugin.Log.LogInfo($"Realm transition {(block ? "BLOCKED" : "restored")} ({found} event(s) found)");
+            return found;
         }
 
-        private float _autoApplyAt = -1f;
+        private bool _blockApplied;
+        private float _nextBlockTry;
 
         /// <summary>Read-only snapshot: scenes, Scene_Load components, active quest, money/energy.</summary>
         private static void ProbeDays()

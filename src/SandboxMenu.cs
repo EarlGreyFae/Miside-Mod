@@ -6,8 +6,9 @@ using UnityEngine;
 namespace MiSideMod
 {
     /// <summary>
-    /// In-game sandbox panel (F2). Everything here reuses content the game already ships:
-    /// its minigames, Chibi Mita animations, dialogues and quests, plus a few economy cheats.
+    /// In-game sandbox panel (F2), driven by the keyboard because the game hides/locks the mouse cursor:
+    /// Up/Down select, Enter runs, Left/Right switch tabs. Mouse clicks also work if the cursor is free.
+    /// Everything here reuses content the game already ships.
     /// </summary>
     internal static class SandboxMenu
     {
@@ -16,16 +17,36 @@ namespace MiSideMod
         internal static bool FreeMinigames;
 
         private const int MaxEnergy = 30; // energy is re-rolled to 15-29 each cycle; 30 is a safe "full"
+        private const float RowH = 26f;
         private static readonly string[] Tabs = { "Cheats", "Minigames", "Chibi", "Dialogues", "Quests" };
-        private static readonly List<KeyValuePair<string, Action>> Items = new List<KeyValuePair<string, Action>>();
-        private static int _tab;
+
+        private class Item
+        {
+            public Func<string> Label;
+            public Action Run;
+        }
+
+        private static readonly List<Item> Items = new List<Item>();
+        private static int _tab, _sel;
         private static Vector2 _scroll;
         private static float _nextTick;
+        private static bool _prevCursorVisible;
+        private static CursorLockMode _prevLock;
 
         internal static void Toggle()
         {
             Open = !Open;
-            if (Open) Refresh();
+            if (Open)
+            {
+                _prevCursorVisible = Cursor.visible;
+                _prevLock = Cursor.lockState;
+                Refresh();
+            }
+            else
+            {
+                Cursor.visible = _prevCursorVisible;
+                Cursor.lockState = _prevLock;
+            }
         }
 
         private static string Label(Component c)
@@ -34,14 +55,39 @@ namespace MiSideMod
             return p != null ? $"{c.name}   ({p.name})" : c.name;
         }
 
-        private static void Add(string label, Action a) => Items.Add(new KeyValuePair<string, Action>(label, a));
+        private static void Add(string label, Action run) => Items.Add(new Item { Label = () => label, Run = run });
+        private static void Add(Func<string> label, Action run) => Items.Add(new Item { Label = label, Run = run });
+        private static string OnOff(bool b) => b ? "ON" : "OFF";
 
         private static void Refresh()
         {
             Items.Clear();
+            _sel = 0;
+            _scroll = Vector2.zero;
             var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
             switch (_tab)
             {
+                case 0:
+                    Add("Coins +100", () => main.MoneyAdd(100));
+                    Add("Coins +1000", () => main.MoneyAdd(1000));
+                    Add("Refill energy", () => main.energy = MaxEnergy);
+                    Add(() => $"Infinite energy: {OnOff(InfiniteEnergy)}", () => InfiniteEnergy = !InfiniteEnergy);
+                    Add(() => $"Minigames cost no energy: {OnOff(FreeMinigames)}", () => FreeMinigames = !FreeMinigames);
+                    Add(() => $"Stay in the phone world (block Day 37 jump): {OnOff(Plugin.BlockJump.Value)}", () =>
+                    {
+                        Plugin.BlockJump.Value = !Plugin.BlockJump.Value;
+                        ModBehaviour.SetTransitionBlocked(Plugin.BlockJump.Value, false);
+                    });
+                    Add("Unlock every shop item", () =>
+                    {
+                        int n = 0;
+                        foreach (var b in Resources.FindObjectsOfTypeAll<Tamagotchi_BuyCase>().Where(b => b.gameObject.scene.IsValid()))
+                            if (b.close) { b.close = false; n++; }
+                        Plugin.Log.LogInfo($"Sandbox: unlocked {n} shop item(s)");
+                    });
+                    Add("Stop current minigame", () => main.MiniGameStop());
+                    Add("New cycle (re-roll energy, hunger, mood)", () => main.NewDay());
+                    break;
                 case 1:
                     foreach (var g in Resources.FindObjectsOfTypeAll<Tamagotchi_MiniGame>().Where(x => x.gameObject.scene.IsValid()))
                     {
@@ -70,16 +116,42 @@ namespace MiSideMod
                         for (int i = 0; i < quests.transform.childCount; i++)
                         {
                             var q = quests.transform.GetChild(i).gameObject;
-                            Add($"{q.name}  [{(q.activeSelf ? "active" : "off")}]", () => q.SetActive(true));
+                            Add(() => $"{q.name}  [{(q.activeSelf ? "active" : "off")}]", () => q.SetActive(true));
                         }
                     break;
             }
-            Items.Sort((a, b) => string.CompareOrdinal(a.Key, b.Key));
+            if (_tab != 0) Items.Sort((a, b) => string.CompareOrdinal(a.Label(), b.Label()));
         }
 
-        /// <summary>Called about once a second from Update for the always-on toggles.</summary>
+        private static void Run(Item it)
+        {
+            try { it.Run(); }
+            catch (Exception e) { Plugin.Log.LogWarning($"Sandbox action '{it.Label()}' failed: {e.Message}"); }
+        }
+
+        /// <summary>Called every frame from Update: keyboard control plus the always-on toggles.</summary>
         internal static void Tick()
         {
+            if (Open)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+
+                if (Input.GetKeyDown(KeyCode.DownArrow)) _sel++;
+                if (Input.GetKeyDown(KeyCode.UpArrow)) _sel--;
+                if (Input.GetKeyDown(KeyCode.PageDown)) _sel += 8;
+                if (Input.GetKeyDown(KeyCode.PageUp)) _sel -= 8;
+                _sel = Mathf.Clamp(_sel, 0, Mathf.Max(0, Items.Count - 1));
+
+                int tab = _tab;
+                if (Input.GetKeyDown(KeyCode.RightArrow)) tab = (_tab + 1) % Tabs.Length;
+                if (Input.GetKeyDown(KeyCode.LeftArrow)) tab = (_tab + Tabs.Length - 1) % Tabs.Length;
+                if (tab != _tab) { _tab = tab; Refresh(); }
+
+                if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && Items.Count > 0)
+                    Run(Items[_sel]);
+            }
+
             if (Time.time < _nextTick) return;
             _nextTick = Time.time + 1f;
             try
@@ -99,78 +171,55 @@ namespace MiSideMod
         internal static void Draw()
         {
             if (!Open) return;
-            var win = new Rect(20, 20, 480, Mathf.Min(Screen.height - 40, 640));
-            GUI.Box(win, "MiSide Sandbox   (F2 to close)");
-
-            for (int i = 0; i < Tabs.Length; i++)
-                if (GUI.Button(new Rect(win.x + 8 + i * 92, win.y + 26, 88, 24), Tabs[i]))
-                {
-                    _tab = i;
-                    _scroll = Vector2.zero;
-                    Refresh();
-                }
-
-            float top = win.y + 58;
             try
             {
-                if (_tab == 0) DrawCheats(win.x + 8, top, win.width - 16);
-                else DrawList(new Rect(win.x + 8, top, win.width - 16, win.yMax - top - 8));
+                var win = new Rect(20, 20, 520, Mathf.Min(Screen.height - 40, 640));
+                GUI.Box(win, "MiSide Sandbox   (F2 close)");
+                GUI.Label(new Rect(win.x + 8, win.y + 22, win.width - 16, 22), "Up/Down select   Enter run   Left/Right tabs");
+
+                for (int i = 0; i < Tabs.Length; i++)
+                    if (GUI.Button(new Rect(win.x + 8 + i * 100, win.y + 46, 96, 24), (i == _tab ? "[ " + Tabs[i] + " ]" : Tabs[i])))
+                    {
+                        _tab = i;
+                        Refresh();
+                    }
+
+                float top = win.y + 76;
+                if (_tab == 0)
+                {
+                    var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
+                    if (main != null)
+                    {
+                        GUI.Label(new Rect(win.x + 8, top, win.width - 16, 22), $"Coins: {main.money}    Energy: {main.energy}");
+                        top += 24;
+                    }
+                }
+
+                var view = new Rect(win.x + 8, top, win.width - 16, win.yMax - top - 8);
+                if (Items.Count == 0)
+                {
+                    GUI.Label(new Rect(view.x, view.y, view.width, 24), "Nothing found. Load the Tamagotchi scene, then reopen (F2).");
+                    return;
+                }
+
+                // keep the selected row in view
+                if (_sel * RowH < _scroll.y) _scroll.y = _sel * RowH;
+                if ((_sel + 1) * RowH > _scroll.y + view.height) _scroll.y = (_sel + 1) * RowH - view.height;
+
+                var content = new Rect(0, 0, view.width - 20, Items.Count * RowH);
+                _scroll = GUI.BeginScrollView(view, _scroll, content);
+                for (int i = 0; i < Items.Count; i++)
+                {
+                    var r = new Rect(0, i * RowH, content.width, RowH - 2);
+                    if (GUI.Button(r, (i == _sel ? ">  " : "    ") + Items[i].Label()))
+                    {
+                        _sel = i;
+                        Run(Items[i]);
+                    }
+                }
+                GUI.EndScrollView();
             }
             catch (Exception e) { Plugin.Log.LogWarning("Sandbox draw failed: " + e.Message); }
-        }
-
-        private static void DrawCheats(float x, float y, float w)
-        {
-            var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
-            if (main == null) { GUI.Label(new Rect(x, y, w, 24), "Tamagotchi_Main not found (load the Tamagotchi scene)."); return; }
-
-            GUI.Label(new Rect(x, y, w, 24), $"Coins: {main.money}    Energy: {main.energy}");
-            y += 30;
-            if (GUI.Button(new Rect(x, y, w / 2 - 2, 26), "+100 coins")) main.MoneyAdd(100);
-            if (GUI.Button(new Rect(x + w / 2 + 2, y, w / 2 - 2, 26), "+1000 coins")) main.MoneyAdd(1000);
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 26), "Refill energy")) main.energy = MaxEnergy;
-            y += 32;
-            InfiniteEnergy = GUI.Toggle(new Rect(x, y, w, 24), InfiniteEnergy, "Infinite energy");
-            y += 28;
-            FreeMinigames = GUI.Toggle(new Rect(x, y, w, 24), FreeMinigames, "Minigames cost no energy");
-            y += 28;
-            bool block = GUI.Toggle(new Rect(x, y, w, 24), Plugin.BlockJump.Value, "Stay in the phone world (block the Day 37 jump)");
-            if (block != Plugin.BlockJump.Value)
-            {
-                Plugin.BlockJump.Value = block;
-                ModBehaviour.SetTransitionBlocked(block);
-            }
-            y += 34;
-            if (GUI.Button(new Rect(x, y, w, 26), "Unlock every shop item"))
-            {
-                int n = 0;
-                foreach (var b in Resources.FindObjectsOfTypeAll<Tamagotchi_BuyCase>().Where(b => b.gameObject.scene.IsValid()))
-                    if (b.close) { b.close = false; n++; }
-                Plugin.Log.LogInfo($"Sandbox: unlocked {n} shop item(s)");
-            }
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 26), "Stop current minigame")) main.MiniGameStop();
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 26), "New cycle (re-roll energy, hunger, mood)")) main.NewDay();
-        }
-
-        private static void DrawList(Rect view)
-        {
-            if (Items.Count == 0)
-            {
-                GUI.Label(new Rect(view.x, view.y, view.width, 24), "Nothing found. Load the Tamagotchi scene, then reopen.");
-                return;
-            }
-            var content = new Rect(0, 0, view.width - 20, Items.Count * 26);
-            _scroll = GUI.BeginScrollView(view, _scroll, content);
-            for (int i = 0; i < Items.Count; i++)
-                if (GUI.Button(new Rect(0, i * 26, content.width, 24), Items[i].Key))
-                {
-                    try { Items[i].Value(); }
-                    catch (Exception e) { Plugin.Log.LogWarning($"Sandbox action '{Items[i].Key}' failed: {e.Message}"); }
-                }
-            GUI.EndScrollView();
         }
     }
 }
