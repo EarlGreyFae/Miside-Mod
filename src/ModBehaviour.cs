@@ -33,15 +33,34 @@ namespace MiSideMod
             }
         }
 
-        /// <summary>Logs loaded scenes and every Location14_Days instance (even inactive ones).</summary>
+        private static string PathOf(Transform t)
+        {
+            var s = t.name;
+            while (t.parent != null) { t = t.parent; s = t.name + "/" + s; }
+            return s;
+        }
+
+        /// <summary>Read-only snapshot: scenes, Scene_Load components, active quest, money/energy.</summary>
         private static void ProbeDays()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 Plugin.Log.LogInfo($"Loaded scene {i}: {SceneManager.GetSceneAt(i).name}");
-            var all = Resources.FindObjectsOfTypeAll<Location14_Days>();
-            Plugin.Log.LogInfo($"Location14_Days instances: {all.Length}");
-            foreach (var d in all)
-                Plugin.Log.LogInfo($"  {d.name} scene='{d.gameObject.scene.name}' days={d.days} indexEventDay={d.indexEventDay}");
+
+            foreach (var l in Resources.FindObjectsOfTypeAll<Scene_Load>())
+                Plugin.Log.LogInfo($"  Scene_Load {PathOf(l.transform)} active={l.gameObject.activeInHierarchy} " +
+                                   $"load='{l.nameSceneLoad}' unload='{l.nameSceneUnload}' continue='{l.nameSceneContinue}' loading={l.loading}");
+
+            var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
+            if (main != null)
+                Plugin.Log.LogInfo($"  Tamagotchi_Main money={main.money} energy={main.energy} room={main.indexRoomShow}");
+
+            var quests = GameObject.Find("Quests");
+            if (quests != null)
+                for (int i = 0; i < quests.transform.childCount; i++)
+                {
+                    var c = quests.transform.GetChild(i);
+                    Plugin.Log.LogInfo($"  Quest '{c.name}' active={c.gameObject.activeSelf}");
+                }
         }
 
         private static bool Wanted(string n)
