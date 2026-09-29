@@ -58,6 +58,43 @@ namespace MiSideMod
             return sb.Length == 0 ? "(none)" : sb.ToString();
         }
 
+        private static readonly string[] LoadMethods = { "GoScene", "StartLoad", "GoSceneAfterPause", "SaveGame" };
+
+        private static void ReportEvent(string owner, string prop, UnityEvent ev)
+        {
+            var l = Listeners(ev);
+            if (LoadMethods.Any(m => l.Contains("." + m)))
+                Plugin.Log.LogInfo($"  >>> LOAD TRIGGER: {owner}.{prop} -> {l}");
+        }
+
+        /// <summary>Looks at one object's UnityEvent properties, and one level into arrays of game objects.</summary>
+        private static void ScanEvents(string owner, object obj, bool intoArrays = true)
+        {
+            if (obj == null) return;
+            foreach (var p in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                try
+                {
+                    if (p.GetIndexParameters().Length > 0) continue;
+                    if (p.PropertyType == typeof(UnityEvent))
+                        ReportEvent(owner, p.Name, (UnityEvent)p.GetValue(obj));
+                    else if (intoArrays && p.PropertyType.Name.StartsWith("Il2CppReferenceArray"))
+                    {
+                        int i = 0;
+                        if (p.GetValue(obj) is System.Collections.IEnumerable en)
+                            foreach (var el in en) ScanEvents($"{owner}.{p.Name}[{i++}]", el, false);
+                    }
+                }
+                catch { /* ignore properties that cannot be read */ }
+            }
+        }
+
+        private static void ScanAll<T>() where T : Component
+        {
+            foreach (var c in Resources.FindObjectsOfTypeAll<T>())
+                ScanEvents(PathOf(c.transform), c);
+        }
+
         /// <summary>Read-only snapshot: scenes, Scene_Load components, active quest, money/energy.</summary>
         private static void ProbeDays()
         {
@@ -77,7 +114,26 @@ namespace MiSideMod
                 Plugin.Log.LogInfo($"  Location1Main canBuyTelevision={loc1.canBuyTelevision} buyTV->{Listeners(loc1.eventBuyTelevision)}");
 
             foreach (var b in Resources.FindObjectsOfTypeAll<Tamagotchi_BuyCase>())
-                Plugin.Log.LogInfo($"  Shop '{PathOf(b.transform)}' price={b.money} closed={b.close} buy->{Listeners(b.eventBuy)}");
+            {
+                var names = new StringBuilder();
+                try
+                {
+                    foreach (var t in b.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                        if (!string.IsNullOrWhiteSpace(t.text)) names.Append('[').Append(t.text.Replace("\n", " ")).Append(']');
+                }
+                catch { }
+                Plugin.Log.LogInfo($"  Shop '{PathOf(b.transform)}' price={b.money} closed={b.close} texts={names} buy->{Listeners(b.eventBuy)}");
+            }
+
+            Plugin.Log.LogInfo("  Scanning events for scene-load triggers...");
+            ScanAll<Events_Data>();
+            ScanAll<Time_Events>();
+            ScanAll<Tamagotchi_BuyCase>();
+            ScanAll<Tamagotchi_MiniGame>();
+            ScanAll<Tamagotchi_Dialogue_Mob>();
+            ScanAll<Location1Main>();
+            ScanAll<Scene_Load>();
+            Plugin.Log.LogInfo("  Scan done.");
 
             var quests = GameObject.Find("Quests");
             if (quests != null)
