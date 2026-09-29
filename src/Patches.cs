@@ -25,17 +25,5 @@ namespace MiSideMod
         [HarmonyPostfix, HarmonyPatch(typeof(Tamagotchi_Dialogue), nameof(Tamagotchi_Dialogue.StartDialogue))]
         private static void StartDialogue(Tamagotchi_Dialogue_Mob _dialogueRun)
             => Plugin.Log.LogInfo($"StartDialogue: {(_dialogueRun != null ? _dialogueRun.name + " file=" + _dialogueRun.dialogueFile : "null")}");
-
-        [HarmonyPostfix, HarmonyPatch(typeof(Events_Data), nameof(Events_Data.EV))]
-        private static void EventEV(Events_Data __instance, int x)
-            => Plugin.Log.LogInfo($"Events_Data.EV: {__instance.name} #{x}");
-
-        [HarmonyPostfix, HarmonyPatch(typeof(Events_Data), nameof(Events_Data.NewEvent))]
-        private static void EventNew(Events_Data __instance, int x)
-            => Plugin.Log.LogInfo($"Events_Data.NewEvent: {__instance.name} #{x}");
-
-        [HarmonyPostfix, HarmonyPatch(typeof(Location14_Days), nameof(Location14_Days.NextDay))]
-        private static void DaysNextDay(Location14_Days __instance)
-            => Plugin.Log.LogInfo($"Location14_Days.NextDay: days={__instance.days}");
     }
 }
