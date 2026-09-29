@@ -201,7 +201,7 @@ namespace MiSideMod
                 if (_shown >= _full.Length)
                     GUI.Label(new Rect(r.x, r.y, r.width - 14, r.height - 8), "Enter", _hintStyle);
             }
-            catch (Exception e) { Plugin.Log.LogWarning("Dialogue draw failed: " + e.Message); }
+            catch (Exception e) { Plugin.WarnOnce("Dialogue draw failed: " + e.Message); }
         }
     }
 }

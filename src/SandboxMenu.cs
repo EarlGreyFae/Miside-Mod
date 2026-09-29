@@ -173,7 +173,7 @@ namespace MiSideMod
                     foreach (var c in Resources.FindObjectsOfTypeAll<Tamagotchi_MiniGameCase>())
                         if (c.energy != 0) c.energy = 0;
             }
-            catch (Exception e) { Plugin.Log.LogWarning("Sandbox tick failed: " + e.Message); }
+            catch (Exception e) { Plugin.WarnOnce("Sandbox tick failed: " + e.Message); }
         }
 
         internal static void Draw()
@@ -232,7 +232,7 @@ namespace MiSideMod
                 }
                 GUI.Label(new Rect(view.x, view.yMax - RowH, view.width, RowH), $"{_sel + 1} / {Items.Count}");
             }
-            catch (Exception e) { Plugin.Log.LogWarning("Sandbox draw failed: " + e.Message); }
+            catch (Exception e) { Plugin.WarnOnce("Sandbox draw failed: " + e.Message); }
         }
     }
 }

@@ -18,6 +18,14 @@ namespace MiSideMod
         internal static ConfigEntry<UnityEngine.KeyCode> DumpKey;
         internal static ConfigEntry<UnityEngine.KeyCode> TypesKey;
         internal static ConfigEntry<bool> BlockJump;
+        private static readonly System.Collections.Generic.HashSet<string> Warned = new System.Collections.Generic.HashSet<string>();
+
+        /// <summary>Logs a warning only the first time this exact message appears (per-frame code can repeat).</summary>
+        internal static void WarnOnce(string message)
+        {
+            if (Warned.Add(message)) Log.LogWarning(message);
+        }
+
         internal static ConfigEntry<string> PlayerName;
 
         public override void Load()
