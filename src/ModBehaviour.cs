@@ -20,6 +20,9 @@ namespace MiSideMod
             if (Input.GetKeyDown(Plugin.TypesKey.Value))
                 DumpTypes();
 
+            if (Input.GetKeyDown(KeyCode.F12))
+                ProbeDays();
+
             // Test keys: F10 = +100 coins, F11 = Tamagotchi_Main.NewDay (re-rolls energy, not the story day)
             if (Input.GetKeyDown(KeyCode.F10) || Input.GetKeyDown(KeyCode.F11))
             {
@@ -28,6 +31,17 @@ namespace MiSideMod
                 if (Input.GetKeyDown(KeyCode.F10)) main.MoneyAdd(100);
                 else main.NewDay();
             }
+        }
+
+        /// <summary>Logs loaded scenes and every Location14_Days instance (even inactive ones).</summary>
+        private static void ProbeDays()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+                Plugin.Log.LogInfo($"Loaded scene {i}: {SceneManager.GetSceneAt(i).name}");
+            var all = Resources.FindObjectsOfTypeAll<Location14_Days>();
+            Plugin.Log.LogInfo($"Location14_Days instances: {all.Length}");
+            foreach (var d in all)
+                Plugin.Log.LogInfo($"  {d.name} scene='{d.gameObject.scene.name}' days={d.days} indexEventDay={d.indexEventDay}");
         }
 
         private static bool Wanted(string n)
