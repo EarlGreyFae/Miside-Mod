@@ -32,6 +32,11 @@ minigame start/stop, dialogue start) are logged to `LogOutput.log`.
 Chibi Mita animation, replay any dialogue, or activate any quest. All of it reuses content the game
 already has. **F5** switches on the final quest (Day 37) so the ending can be tested in seconds.
 
+**F3** plays a random mod dialogue script; the sandbox panel has a **Mod chats** tab. Scripts are plain text in
+`BepInEx/config/MiSideMod/dialogues/` (format: `docs/dialogue-format.md`). The game's own dialogue is one text
+line per line number in `Data/Languages/<lang>/LocationDialogue Location1.txt`, with voice files named by line
+number in `Data/LanguagesVoice/<lang>/LocationDialogue Location1/`.
+
 **F6** toggles `BlockRealmTransition` (also a config option, off by default): it switches off the saved
 event on the final quest (Day 37 "Wait", `Quest 10`) that calls `World.GoScene` and pulls you into
 `Scene 2 - InGame`. Experimental: what the game does afterwards has not been tested.

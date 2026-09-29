@@ -14,7 +14,11 @@ namespace MiSideMod
     {
         public ModBehaviour(IntPtr ptr) : base(ptr) { }
 
-        private void OnGUI() => SandboxMenu.Draw();
+        private void OnGUI()
+        {
+            SandboxMenu.Draw();
+            ModDialogue.Draw();
+        }
 
         private void Update()
         {
@@ -29,6 +33,9 @@ namespace MiSideMod
             if (Input.GetKeyDown(KeyCode.F2))
                 SandboxMenu.Toggle();
             SandboxMenu.Tick();
+            ModDialogue.Tick();
+            if (Input.GetKeyDown(KeyCode.F3) && !ModDialogue.Active)
+                ModDialogue.PlayRandom();
 
             // F5 = debug: switch on the final quest (Day 37) to test the ending / the transition block
             if (Input.GetKeyDown(KeyCode.F5))

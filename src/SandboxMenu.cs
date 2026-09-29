@@ -18,7 +18,7 @@ namespace MiSideMod
 
         private const int MaxEnergy = 30; // energy is re-rolled to 15-29 each cycle; 30 is a safe "full"
         private const float RowH = 26f;
-        private static readonly string[] Tabs = { "Cheats", "Minigames", "Chibi", "Dialogues", "Quests" };
+        private static readonly string[] Tabs = { "Cheats", "Minigames", "Chibi", "Dialogues", "Quests", "Mod chats" };
 
         private class Item
         {
@@ -120,7 +120,16 @@ namespace MiSideMod
                         }
                     break;
             }
-            if (_tab != 0) Items.Sort((a, b) => string.CompareOrdinal(a.Label(), b.Label()));
+            if (_tab == 5)
+            {
+                Add("Play a random chat  (also F3)", () => { Toggle(); ModDialogue.PlayRandom(); });
+                foreach (var f in ModDialogue.ScriptFiles())
+                {
+                    var path = f;
+                    Add(System.IO.Path.GetFileNameWithoutExtension(path), () => { Toggle(); ModDialogue.Play(path); });
+                }
+            }
+            if (_tab != 0 && _tab != 5) Items.Sort((a, b) => string.CompareOrdinal(a.Label(), b.Label()));
         }
 
         private static void Run(Item it)
@@ -132,7 +141,7 @@ namespace MiSideMod
         /// <summary>Called every frame from Update: keyboard control plus the always-on toggles.</summary>
         internal static void Tick()
         {
-            if (Open)
+            if (Open && !ModDialogue.Active)
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
@@ -185,6 +194,11 @@ namespace MiSideMod
                     }
 
                 float top = win.y + 76;
+                if (_tab == 5)
+                {
+                    GUI.Label(new Rect(win.x + 8, top, win.width - 16, 22), @"Scripts: BepInEx\config\MiSideMod\dialogues");
+                    top += 24;
+                }
                 if (_tab == 0)
                 {
                     var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();

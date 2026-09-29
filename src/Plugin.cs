@@ -18,6 +18,7 @@ namespace MiSideMod
         internal static ConfigEntry<UnityEngine.KeyCode> DumpKey;
         internal static ConfigEntry<UnityEngine.KeyCode> TypesKey;
         internal static ConfigEntry<bool> BlockJump;
+        internal static ConfigEntry<string> PlayerName;
 
         public override void Load()
         {
@@ -30,6 +31,10 @@ namespace MiSideMod
 
             BlockJump = Config.Bind("Gameplay", "BlockRealmTransition", false,
                 "If true, the Day 37 jump into Mita's world is switched off so you stay in the minigame. F6 toggles it in game.");
+
+            PlayerName = Config.Bind("Dialogue", "PlayerName", "friend",
+                "Name that replaces [player] in mod dialogue scripts.");
+            ModDialogue.EnsureSamples();
 
             ClassInjector.RegisterTypeInIl2Cpp<ModBehaviour>();
             AddComponent<ModBehaviour>();
