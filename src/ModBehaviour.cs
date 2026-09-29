@@ -20,7 +20,7 @@ namespace MiSideMod
             if (Input.GetKeyDown(Plugin.TypesKey.Value))
                 DumpTypes();
 
-            // Test keys: F10 = +100 coins, F11 = skip to the next day
+            // Test keys: F10 = +100 coins, F11 = Tamagotchi_Main.NewDay (re-rolls energy, not the story day)
             if (Input.GetKeyDown(KeyCode.F10) || Input.GetKeyDown(KeyCode.F11))
             {
                 var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
@@ -28,6 +28,13 @@ namespace MiSideMod
                 if (Input.GetKeyDown(KeyCode.F10)) main.MoneyAdd(100);
                 else main.NewDay();
             }
+        }
+
+        private static bool Wanted(string n)
+        {
+            string[] keys = { "Tamagotchi", "Chibi", "RealRoom", "Location1", "Global", "Save", "Time_",
+                              "Events_Data", "Scene_Load", "Day", "Quest", "Progress", "Story" };
+            return keys.Any(k => n.Contains(k));
         }
 
         /// <summary>Lists fields/properties/methods of the minigame classes to a text file.</summary>
@@ -44,14 +51,23 @@ namespace MiSideMod
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
                 | BindingFlags.Static | BindingFlags.DeclaredOnly;
             var sb = new StringBuilder();
-            foreach (var t in types.Where(t => t.Name.Contains("Tamagotchi") || t.Name.Contains("Chibi"))
+            foreach (var t in types.Where(t => Wanted(t.Name))
                                    .OrderBy(t => t.Name))
             {
                 sb.Append("\n== ").Append(t.FullName).Append(" : ").Append(t.BaseType?.Name).Append('\n');
-                foreach (var f in t.GetFields(all))
+                foreach (var f in t.GetFields(all).Where(f => !f.Name.StartsWith("NativeFieldInfoPtr")
+                                                            && !f.Name.StartsWith("NativeMethodInfoPtr")))
                     sb.Append("  field  ").Append(f.FieldType.Name).Append(' ').Append(f.Name).Append('\n');
                 foreach (var p in t.GetProperties(all))
-                    sb.Append("  prop   ").Append(p.PropertyType.Name).Append(' ').Append(p.Name).Append('\n');
+                {
+                    sb.Append("  prop   ").Append(p.PropertyType.Name).Append(' ').Append(p.Name);
+                    // Show current values of static properties (globals such as the day counter)
+                    if (p.GetGetMethod(true)?.IsStatic == true && p.GetIndexParameters().Length == 0)
+                    {
+                        try { sb.Append(" = ").Append(p.GetValue(null)); } catch { sb.Append(" = <error>"); }
+                    }
+                    sb.Append('\n');
+                }
                 foreach (var m in t.GetMethods(all).Where(m => !m.IsSpecialName))
                     sb.Append("  method ").Append(m.ReturnType.Name).Append(' ').Append(m.Name).Append('(')
                       .Append(string.Join(", ", m.GetParameters().Select(x => x.ParameterType.Name + " " + x.Name)))

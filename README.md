@@ -23,7 +23,7 @@ In game, press **F8** (configurable) to dump the active scene hierarchy and comp
 
 **F9** writes the members of all `Tamagotchi*` / `*Chibi*` classes to `BepInEx/MiSideMod_types.txt`.
 
-**F10** gives +100 coins and **F11** skips to the next day (test keys). Game events (new day,
+**F10** gives +100 coins and **F11** re-rolls energy/hunger/mood via `NewDay` (not a story day; the day counter lives elsewhere). Game events (new day,
 minigame start/stop, dialogue start) are logged to `LogOutput.log`.
 
 ## What the scene dump showed
