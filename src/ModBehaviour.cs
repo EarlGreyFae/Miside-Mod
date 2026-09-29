@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 namespace MiSideMod
@@ -40,6 +41,23 @@ namespace MiSideMod
             return s;
         }
 
+        private static string Listeners(UnityEvent e)
+        {
+            if (e == null) return "-";
+            var sb = new StringBuilder();
+            try
+            {
+                for (int i = 0; i < e.GetPersistentEventCount(); i++)
+                {
+                    var tgt = e.GetPersistentTarget(i);
+                    sb.Append(i > 0 ? "; " : "").Append(tgt != null ? tgt.name : "null")
+                      .Append('.').Append(e.GetPersistentMethodName(i));
+                }
+            }
+            catch (Exception ex) { sb.Append("<error ").Append(ex.Message).Append('>'); }
+            return sb.Length == 0 ? "(none)" : sb.ToString();
+        }
+
         /// <summary>Read-only snapshot: scenes, Scene_Load components, active quest, money/energy.</summary>
         private static void ProbeDays()
         {
@@ -53,6 +71,13 @@ namespace MiSideMod
             var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
             if (main != null)
                 Plugin.Log.LogInfo($"  Tamagotchi_Main money={main.money} energy={main.energy} room={main.indexRoomShow}");
+
+            var loc1 = UnityEngine.Object.FindObjectOfType<Location1Main>();
+            if (loc1 != null)
+                Plugin.Log.LogInfo($"  Location1Main canBuyTelevision={loc1.canBuyTelevision} buyTV->{Listeners(loc1.eventBuyTelevision)}");
+
+            foreach (var b in Resources.FindObjectsOfTypeAll<Tamagotchi_BuyCase>())
+                Plugin.Log.LogInfo($"  Shop '{PathOf(b.transform)}' price={b.money} closed={b.close} buy->{Listeners(b.eventBuy)}");
 
             var quests = GameObject.Find("Quests");
             if (quests != null)

@@ -23,7 +23,7 @@ In game, press **F8** (configurable) to dump the active scene hierarchy and comp
 
 **F9** writes the members of all `Tamagotchi*` / `*Chibi*` classes to `BepInEx/MiSideMod_types.txt`.
 
-**F12** logs loaded scenes, `Scene_Load` components (what triggers the jump to `Scene 2 - InGame`), the active quest and money/energy. (`Location14_Days` does not exist in this scene.)
+**F12** logs loaded scenes, `Scene_Load` components (what triggers the jump to `Scene 2 - InGame`), the active quest, money/energy, and every shop item with its price and what its purchase triggers (to find the TV purchase that ends the minigame). (`Location14_Days` does not exist in this scene.)
 
 **F10** gives +100 coins and **F11** re-rolls energy/hunger/mood via `NewDay` (not a story day; the day counter lives elsewhere). Game events (new day,
 minigame start/stop, dialogue start) are logged to `LogOutput.log`.
