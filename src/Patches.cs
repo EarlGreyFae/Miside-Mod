@@ -24,6 +24,9 @@ namespace MiSideMod
 
         [HarmonyPostfix, HarmonyPatch(typeof(Tamagotchi_Dialogue), nameof(Tamagotchi_Dialogue.StartDialogue))]
         private static void StartDialogue(Tamagotchi_Dialogue_Mob _dialogueRun)
-            => Plugin.Log.LogInfo($"StartDialogue: {(_dialogueRun != null ? _dialogueRun.name + " file=" + _dialogueRun.dialogueFile : "null")}");
+        {
+            Plugin.Log.LogInfo($"StartDialogue: {(_dialogueRun != null ? _dialogueRun.name + " file=" + _dialogueRun.dialogueFile : "null")}");
+            FreePlay.OnGameDialogue(_dialogueRun);
+        }
     }
 }

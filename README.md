@@ -37,6 +37,10 @@ already has. **F5** switches on the final quest (Day 37) so the ending can be te
 line per line number in `Data/Languages/<lang>/LocationDialogue Location1.txt`, with voice files named by line
 number in `Data/LanguagesVoice/<lang>/LocationDialogue Location1/`.
 
+**Free play**: with the block on, when the final Day 37 dialogue ends the mod switches off every story quest,
+restores the shop/games buttons, and Mita starts a random mod chat every few minutes (`ChatEveryMinutes`, default 4).
+The Cheats tab also has "Start free play now".
+
 **F6** toggles `BlockRealmTransition` (also a config option, off by default): it switches off the saved
 event on the final quest (Day 37 "Wait", `Quest 10`) that calls `World.GoScene` and pulls you into
 `Scene 2 - InGame`. Experimental: what the game does afterwards has not been tested.

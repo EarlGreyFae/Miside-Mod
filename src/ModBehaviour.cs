@@ -34,6 +34,7 @@ namespace MiSideMod
                 SandboxMenu.Toggle();
             SandboxMenu.Tick();
             ModDialogue.Tick();
+            FreePlay.Tick();
             if (Input.GetKeyDown(KeyCode.F3) && !ModDialogue.Active)
                 ModDialogue.PlayRandom();
 

@@ -77,6 +77,7 @@ namespace MiSideMod
                         Plugin.BlockJump.Value = !Plugin.BlockJump.Value;
                         ModBehaviour.SetTransitionBlocked(Plugin.BlockJump.Value, false);
                     });
+                    Add(() => FreePlay.Active ? "Free play: ON" : "Start free play now (ends all quests)", () => { if (!FreePlay.Active) FreePlay.Enter(); });
                     Add("Unlock every shop item", () =>
                     {
                         int n = 0;

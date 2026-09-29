@@ -27,6 +27,7 @@ namespace MiSideMod
         }
 
         internal static ConfigEntry<string> PlayerName;
+        internal static ConfigEntry<float> ChatMinutes;
 
         public override void Load()
         {
@@ -42,6 +43,8 @@ namespace MiSideMod
 
             PlayerName = Config.Bind("Dialogue", "PlayerName", "friend",
                 "Name that replaces [player] in mod dialogue scripts.");
+            ChatMinutes = Config.Bind("FreePlay", "ChatEveryMinutes", 4f,
+                "In free play, Mita starts a random mod chat roughly this often. 0 turns it off.");
             ModDialogue.EnsureSamples();
 
             ClassInjector.RegisterTypeInIl2Cpp<ModBehaviour>();
