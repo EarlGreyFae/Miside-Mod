@@ -19,6 +19,15 @@ namespace MiSideMod
                 DumpScene();
             if (Input.GetKeyDown(Plugin.TypesKey.Value))
                 DumpTypes();
+
+            // Test keys: F10 = +100 coins, F11 = skip to the next day
+            if (Input.GetKeyDown(KeyCode.F10) || Input.GetKeyDown(KeyCode.F11))
+            {
+                var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
+                if (main == null) { Plugin.Log.LogWarning("Tamagotchi_Main not found in this scene"); return; }
+                if (Input.GetKeyDown(KeyCode.F10)) main.MoneyAdd(100);
+                else main.NewDay();
+            }
         }
 
         /// <summary>Lists fields/properties/methods of the minigame classes to a text file.</summary>
