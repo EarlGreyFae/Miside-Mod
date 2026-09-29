@@ -27,8 +27,7 @@ namespace MiSideMod
         }
 
         private static readonly List<Item> Items = new List<Item>();
-        private static int _tab, _sel;
-        private static Vector2 _scroll;
+        private static int _tab, _sel, _first;
         private static float _nextTick;
         private static bool _prevCursorVisible;
         private static CursorLockMode _prevLock;
@@ -63,7 +62,7 @@ namespace MiSideMod
         {
             Items.Clear();
             _sel = 0;
-            _scroll = Vector2.zero;
+            _first = 0;
             var main = UnityEngine.Object.FindObjectOfType<Tamagotchi_Main>();
             switch (_tab)
             {
@@ -216,22 +215,22 @@ namespace MiSideMod
                     return;
                 }
 
-                // keep the selected row in view
-                if (_sel * RowH < _scroll.y) _scroll.y = _sel * RowH;
-                if ((_sel + 1) * RowH > _scroll.y + view.height) _scroll.y = (_sel + 1) * RowH - view.height;
+                // Manual scrolling (no scroll-view widget): draw only the rows that fit, keeping the selection visible.
+                int rows = Mathf.Max(1, (int)(view.height / RowH) - 1);
+                if (_sel < _first) _first = _sel;
+                if (_sel >= _first + rows) _first = _sel - rows + 1;
+                _first = Mathf.Clamp(_first, 0, Mathf.Max(0, Items.Count - rows));
 
-                var content = new Rect(0, 0, view.width - 20, Items.Count * RowH);
-                _scroll = GUI.BeginScrollView(view, _scroll, content);
-                for (int i = 0; i < Items.Count; i++)
+                for (int i = _first; i < Items.Count && i < _first + rows; i++)
                 {
-                    var r = new Rect(0, i * RowH, content.width, RowH - 2);
+                    var r = new Rect(view.x, view.y + (i - _first) * RowH, view.width, RowH - 2);
                     if (GUI.Button(r, (i == _sel ? ">  " : "    ") + Items[i].Label()))
                     {
                         _sel = i;
                         Run(Items[i]);
                     }
                 }
-                GUI.EndScrollView();
+                GUI.Label(new Rect(view.x, view.yMax - RowH, view.width, RowH), $"{_sel + 1} / {Items.Count}");
             }
             catch (Exception e) { Plugin.Log.LogWarning("Sandbox draw failed: " + e.Message); }
         }
