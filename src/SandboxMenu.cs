@@ -182,12 +182,12 @@ namespace MiSideMod
             if (!Open) return;
             try
             {
-                var win = new Rect(20, 20, 520, Mathf.Min(Screen.height - 40, 640));
+                var win = new Rect(20, 20, 560, Mathf.Min(Screen.height - 40, 640));
                 GUI.Box(win, "MiSide Sandbox   (F2 close)");
                 GUI.Label(new Rect(win.x + 8, win.y + 22, win.width - 16, 22), "Up/Down select   Enter run   Left/Right tabs");
 
                 for (int i = 0; i < Tabs.Length; i++)
-                    if (GUI.Button(new Rect(win.x + 8 + i * 100, win.y + 46, 96, 24), (i == _tab ? "[ " + Tabs[i] + " ]" : Tabs[i])))
+                    if (GUI.Button(new Rect(win.x + 8 + i * 91, win.y + 46, 88, 24), (i == _tab ? "[ " + Tabs[i] + " ]" : Tabs[i])))
                     {
                         _tab = i;
                         Refresh();
