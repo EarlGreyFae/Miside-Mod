@@ -28,6 +28,10 @@ In game, press **F8** (configurable) to dump the active scene hierarchy and comp
 **F10** gives +100 coins and **F11** re-rolls energy/hunger/mood via `NewDay` (not a story day; the day counter lives elsewhere). Game events (new day,
 minigame start/stop, dialogue start) are logged to `LogOutput.log`.
 
+**F6** toggles `BlockRealmTransition` (also a config option, off by default): it switches off the saved
+event on the final quest (Day 37 "Wait", `Quest 10`) that calls `World.GoScene` and pulls you into
+`Scene 2 - InGame`. Experimental: what the game does afterwards has not been tested.
+
 ## What the scene dump showed
 The minigame is the Tamagotchi-style game with Chibi Mita (scene `Scene 1 - RealRoom`): day-based
 quests/cutscenes, and four minigames (`Cartridge`, `Chip`, `Sorting`, `Cooking`) driven by

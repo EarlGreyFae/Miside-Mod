@@ -17,6 +17,7 @@ namespace MiSideMod
         internal static new ManualLogSource Log;
         internal static ConfigEntry<UnityEngine.KeyCode> DumpKey;
         internal static ConfigEntry<UnityEngine.KeyCode> TypesKey;
+        internal static ConfigEntry<bool> BlockJump;
 
         public override void Load()
         {
@@ -26,6 +27,9 @@ namespace MiSideMod
 
             TypesKey = Config.Bind("Debug", "DumpTypesKey", UnityEngine.KeyCode.F9,
                 "Press to write Tamagotchi/Chibi class members to BepInEx/MiSideMod_types.txt.");
+
+            BlockJump = Config.Bind("Gameplay", "BlockRealmTransition", false,
+                "If true, the Day 37 jump into Mita's world is switched off so you stay in the minigame. F6 toggles it in game.");
 
             ClassInjector.RegisterTypeInIl2Cpp<ModBehaviour>();
             AddComponent<ModBehaviour>();

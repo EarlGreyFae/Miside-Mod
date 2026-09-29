@@ -24,6 +24,20 @@ namespace MiSideMod
             if (Input.GetKeyDown(KeyCode.F12))
                 ProbeDays();
 
+            // F6 toggles the block on the Day 37 jump into Mita's world (saved per session in the config)
+            if (Input.GetKeyDown(KeyCode.F6))
+            {
+                Plugin.BlockJump.Value = !Plugin.BlockJump.Value;
+                SetTransitionBlocked(Plugin.BlockJump.Value);
+            }
+            // Apply the configured setting once, shortly after the scene has loaded
+            if (_autoApplyAt < 0f) _autoApplyAt = Time.time + 10f;
+            else if (_autoApplyAt > 0f && Time.time > _autoApplyAt)
+            {
+                _autoApplyAt = 0f;
+                if (Plugin.BlockJump.Value) SetTransitionBlocked(true);
+            }
+
             // Test keys: F10 = +100 coins, F11 = Tamagotchi_Main.NewDay (re-rolls energy, not the story day)
             if (Input.GetKeyDown(KeyCode.F10) || Input.GetKeyDown(KeyCode.F11))
             {
@@ -68,7 +82,7 @@ namespace MiSideMod
         }
 
         /// <summary>Looks at one object's UnityEvent properties, and one level into arrays of game objects.</summary>
-        private static void ScanEvents(string owner, object obj, bool intoArrays = true)
+        private static void ScanEvents(string owner, object obj, Action<string, string, UnityEvent> visit, bool intoArrays = true)
         {
             if (obj == null) return;
             foreach (var p in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -77,23 +91,63 @@ namespace MiSideMod
                 {
                     if (p.GetIndexParameters().Length > 0) continue;
                     if (p.PropertyType == typeof(UnityEvent))
-                        ReportEvent(owner, p.Name, (UnityEvent)p.GetValue(obj));
+                        visit(owner, p.Name, (UnityEvent)p.GetValue(obj));
                     else if (intoArrays && p.PropertyType.Name.StartsWith("Il2CppReferenceArray"))
                     {
                         int i = 0;
                         if (p.GetValue(obj) is System.Collections.IEnumerable en)
-                            foreach (var el in en) ScanEvents($"{owner}.{p.Name}[{i++}]", el, false);
+                            foreach (var el in en) ScanEvents($"{owner}.{p.Name}[{i++}]", el, visit, false);
                     }
                 }
                 catch { /* ignore properties that cannot be read */ }
             }
         }
 
-        private static void ScanAll<T>() where T : Component
+        private static void ScanAll<T>(Action<string, string, UnityEvent> visit) where T : Component
         {
             foreach (var c in Resources.FindObjectsOfTypeAll<T>())
-                ScanEvents(PathOf(c.transform), c);
+                ScanEvents(PathOf(c.transform), c, visit);
         }
+
+        private static void VisitAllEvents(Action<string, string, UnityEvent> visit)
+        {
+            ScanAll<Events_Data>(visit);
+            ScanAll<Time_Events>(visit);
+            ScanAll<Tamagotchi_BuyCase>(visit);
+            ScanAll<Tamagotchi_MiniGame>(visit);
+            ScanAll<Tamagotchi_Dialogue_Mob>(visit);
+            ScanAll<Location1Main>(visit);
+            ScanAll<Scene_Load>(visit);
+        }
+
+        /// <summary>
+        /// The pull into Mita's world is a saved event on the last quest (Day 37 "Wait" dialogue):
+        /// TamagotchiHouse.SetActive, GameStop, ..., World.GoScene. Switching every call in that event
+        /// off (a runtime Unity feature, no hooking) keeps the player in the minigame.
+        /// </summary>
+        private static void SetTransitionBlocked(bool block)
+        {
+            int found = 0;
+            VisitAllEvents((owner, prop, ev) =>
+            {
+                try
+                {
+                    int n = ev.GetPersistentEventCount();
+                    bool jump = false;
+                    for (int i = 0; i < n; i++)
+                        if (ev.GetPersistentMethodName(i) == "GoScene") { jump = true; break; }
+                    if (!jump) return;
+                    found++;
+                    for (int i = 0; i < n; i++)
+                        ev.SetPersistentListenerState(i, block ? UnityEventCallState.Off : UnityEventCallState.RuntimeOnly);
+                    Plugin.Log.LogInfo($"  {(block ? "Disabled" : "Restored")} {n} calls on {owner}.{prop}");
+                }
+                catch (Exception e) { Plugin.Log.LogWarning($"  transition toggle failed on {owner}: {e.Message}"); }
+            });
+            Plugin.Log.LogInfo($"Realm transition {(block ? "BLOCKED" : "restored")} ({found} event(s) found)");
+        }
+
+        private float _autoApplyAt = -1f;
 
         /// <summary>Read-only snapshot: scenes, Scene_Load components, active quest, money/energy.</summary>
         private static void ProbeDays()
@@ -126,13 +180,7 @@ namespace MiSideMod
             }
 
             Plugin.Log.LogInfo("  Scanning events for scene-load triggers...");
-            ScanAll<Events_Data>();
-            ScanAll<Time_Events>();
-            ScanAll<Tamagotchi_BuyCase>();
-            ScanAll<Tamagotchi_MiniGame>();
-            ScanAll<Tamagotchi_Dialogue_Mob>();
-            ScanAll<Location1Main>();
-            ScanAll<Scene_Load>();
+            VisitAllEvents(ReportEvent);
             Plugin.Log.LogInfo("  Scan done.");
 
             var quests = GameObject.Find("Quests");
