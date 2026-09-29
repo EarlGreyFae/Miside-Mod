@@ -21,6 +21,13 @@ In game, press **F8** (configurable) to dump the active scene hierarchy and comp
 `BepInEx/LogOutput.log`. Use that, plus a decompiler on `BepInEx/interop/Assembly-CSharp.dll`
 (e.g. dnSpy/ILSpy), to find the minigame's classes, then patch them with Harmony.
 
+**F9** writes the members of all `Tamagotchi*` / `*Chibi*` classes to `BepInEx/MiSideMod_types.txt`.
+
+## What the scene dump showed
+The minigame is the Tamagotchi-style game with Chibi Mita (scene `Scene 1 - RealRoom`): day-based
+quests/cutscenes, and four minigames (`Cartridge`, `Chip`, `Sorting`, `Cooking`) driven by
+`Tamagotchi_Main`, `Tamagotchi_MiniGame`, `Tamagotchi_Dialogue`, `Mob_ChibiMita`.
+
 ## Roadmap
 - [ ] Locate minigame scene and controller classes
 - [ ] Hook Mita's reaction/dialogue system for new lines
